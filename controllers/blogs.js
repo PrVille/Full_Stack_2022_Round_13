@@ -1,14 +1,22 @@
 const router = require("express").Router()
-const { Blog } = require("../models")
+const middleware = require("../util/middleware")
+const { Blog, User } = require("../models")
 
 router.get("/", async (req, res) => {
-  const blogs = await Blog.findAll()
+  const blogs = await Blog.findAll({
+    attributes: { exclude: ['userId'] },
+    include: {
+        model: User,
+        attributes: ['name']
+    }
+  })
   //console.log(JSON.stringify(blogs, null, 2))
   res.json(blogs)
 })
 
-router.post("/", async (req, res) => {
-    const blog = await Blog.create(req.body)
+router.post("/", middleware.tokenExtractor, async (req, res) => {
+    const user = await User.findByPk(req.decodedToken.id)
+    const blog = await Blog.create({...req.body, userId: user.id})
     res.json(blog)
 })
 
@@ -36,9 +44,15 @@ router.put("/:id", blogFinder, async (req, res) => {
   }
 })
 
-router.delete("/:id", blogFinder, async (req, res) => {
+router.delete("/:id", blogFinder, middleware.tokenExtractor, async (req, res) => {
+  const user = await User.findByPk(req.decodedToken.id)  
   if (req.blog) {
-    await req.blog.destroy()
+    if (user.id === req.blog.userId) {
+        await req.blog.destroy()
+        res.json(req.blog)
+    } else {
+        res.status(401).json({ error: "unauthorized" })
+    }
   } else {
     res.status(404).end()
   }
