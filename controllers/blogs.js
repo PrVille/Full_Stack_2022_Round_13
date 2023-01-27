@@ -1,9 +1,9 @@
-const router = require("express").Router()
-const middleware = require("../util/middleware")
-const { Op } = require("sequelize")
-const { Blog, User } = require("../models")
+const router = require('express').Router()
+const middleware = require('../util/middleware')
+const { Op } = require('sequelize')
+const { Blog, User } = require('../models')
 
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   let where = {}
 
   if (req.query.search) {
@@ -22,23 +22,21 @@ router.get("/", async (req, res) => {
       ],
     }
   }
-  
+
   const blogs = await Blog.findAll({
-    attributes: { exclude: ["userId"] },
+    attributes: { exclude: ['userId'] },
     include: {
       model: User,
-      attributes: ["name"],
+      attributes: ['name'],
     },
     where,
-    order: [
-      ['likes', 'DESC'],
-    ],
+    order: [['likes', 'DESC']],
   })
   //console.log(JSON.stringify(blogs, null, 2))
   res.json(blogs)
 })
 
-router.post("/", middleware.tokenExtractor, async (req, res) => {
+router.post('/', middleware.tokenExtractor, async (req, res) => {
   const user = await User.findByPk(req.decodedToken.id)
   const blog = await Blog.create({ ...req.body, userId: user.id })
   res.json(blog)
@@ -49,7 +47,7 @@ const blogFinder = async (req, res, next) => {
   next()
 }
 
-router.get("/:id", blogFinder, async (req, res) => {
+router.get('/:id', blogFinder, async (req, res) => {
   if (req.blog) {
     //console.log(req.blog.toJSON())
     res.json(req.blog)
@@ -58,7 +56,7 @@ router.get("/:id", blogFinder, async (req, res) => {
   }
 })
 
-router.put("/:id", blogFinder, async (req, res) => {
+router.put('/:id', blogFinder, async (req, res) => {
   if (req.blog) {
     req.blog.likes = req.blog.likes + 1
     await req.blog.save()
@@ -69,7 +67,7 @@ router.put("/:id", blogFinder, async (req, res) => {
 })
 
 router.delete(
-  "/:id",
+  '/:id',
   blogFinder,
   middleware.tokenExtractor,
   async (req, res) => {
@@ -79,12 +77,12 @@ router.delete(
         await req.blog.destroy()
         res.json(req.blog)
       } else {
-        res.status(401).json({ error: "unauthorized" })
+        res.status(401).json({ error: 'unauthorized' })
       }
     } else {
       res.status(404).end()
     }
-  }
+  },
 )
 
 module.exports = router
