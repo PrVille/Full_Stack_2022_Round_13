@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken')
 const { SECRET } = require('../util/config')
 
 const errorHandler = (error, request, response, next) => {    
-  console.log("-----ERROR HANDLER-----\n", error, "\n-----END-----")
 
   if (error.name === "SequelizeValidationError") {
     return response.status(400).send({ error: error.message })
@@ -10,7 +9,11 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).send({ error: error.message })
   } else if (error.name === "SequelizeUniqueConstraintError") {
     return response.status(400).send({ error: error.errors[0].message })
-  } 
+  } else if (error.name === 'SequelizeForeignKeyConstraintError') {
+    return response.status(400).send({ error: error.message })
+  }
+
+  console.log("-----ERROR HANDLER-----\n", error, "\n-----END-----")
 
   next(error)
 }
